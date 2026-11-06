@@ -1,22 +1,18 @@
 # Dev Hub
 
-Private, configuration-driven local development tooling. Requires Node 22+ and POSIX process groups (macOS, Linux or WSL). Docker and Caddy are needed only when the consuming configuration enables them.
+Public, configuration-driven local development tooling. Requires Node 22+ and POSIX process groups (macOS, Linux or WSL). Docker and Caddy are needed only when the consuming configuration enables them.
 
 The package has no application names, directory layouts, process roles, framework defaults, database drivers, credentials or business logic. It executes the consuming repository's declared commands. Database setup/reset, queue provisioning, seeding and application-specific checks belong in that repository's configuration or hooks.
 
 ## Installation
 
-Configure your GitHub Packages credentials once, following [GitHub's npm registry authentication instructions](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry). Keep credentials in user configuration or environment variables, never source control. Add this non-secret scope mapping to the consuming repository's `.npmrc`:
-
-```ini
-@128bitstudios:registry=https://npm.pkg.github.com
-```
-
-Install and pin a tested version:
+Install the public, version-pinned npm archive directly from GitHub Releases. No registry login or npm credential file is needed:
 
 ```sh
-npm install --save-dev --save-exact @128bitstudios/devhub@0.1.0
+npm install --save-dev https://github.com/128BitStudios/devhub/releases/download/v0.1.1/128bitstudios-devhub-0.1.1.tgz
 ```
+
+The dependency lockfile records the archive URL and integrity checksum. Commit it with your manifest. Future releases publish the identical archive to GitHub Packages as well; that registry still requires authentication even for public packages. Use the public release URL for credential-free installation. Do not commit credentials or add a registry mapping just for this URL dependency.
 
 Add `"dev": "devhub up"` to your package scripts. `up` performs setup automatically. The initial package installation itself still requires `npm ci` on a new checkout. Avoid global installations or unpinned `npx` downloads for everyday development.
 
@@ -76,4 +72,4 @@ Linked Git worktrees receive stable path-derived instance IDs and share their ma
 
 ## Release
 
-Run `npm ci`, `npm run build`, `npm test`, and inspect `npm pack --dry-run`. Verify CI on the exact main commit before tagging. Publish an immutable `vVERSION` GitHub Release to trigger the package publishing workflow. It uses the repository's scoped `GITHUB_TOKEN`, verifies the version, reruns checks, publishes privately to GitHub Packages, and verifies registry metadata. App consumers upgrade their pinned versions independently.
+Run `npm ci`, `npm run build`, `npm test`, and inspect `npm pack --dry-run`. Verify CI on the exact main commit before tagging. Publish an immutable `vVERSION` GitHub Release to trigger the package publishing workflow. It uses the repository's scoped `GITHUB_TOKEN`, verifies the version, reruns checks, publishes the archive to GitHub Packages and attaches the identical public archive to the GitHub Release, then verifies registry metadata and anonymous installation. App consumers upgrade their pinned versions independently.

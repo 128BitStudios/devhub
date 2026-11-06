@@ -3,7 +3,7 @@ on:
   release:
     types: [published]
 permissions:
-  contents: read
+  contents: write
   packages: write
 jobs:
   publish:
@@ -23,14 +23,40 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
       - name: Install routing test dependency
-        run: sudo apt-get update && sudo apt-get install -y caddy
+        run: |
+          mkdir -p "$RUNNER_TEMP/caddy"
+          gh release download v2.11.9 --repo caddyserver/caddy --pattern caddy_2.11.9_linux_amd64.tar.gz --pattern caddy_2.11.9_checksums.txt --dir "$RUNNER_TEMP/caddy"
+          python3 -c 'import hashlib, os, pathlib; p=pathlib.Path(os.environ["RUNNER_TEMP"])/"caddy"; name="caddy_2.11.9_linux_amd64.tar.gz"; expected=next(line.split()[0] for line in (p/"caddy_2.11.9_checksums.txt").read_text().splitlines() if line.split()[-1]==name); assert hashlib.sha512((p/name).read_bytes()).hexdigest()==expected'
+          tar -xzf "$RUNNER_TEMP/caddy/caddy_2.11.9_linux_amd64.tar.gz" -C "$RUNNER_TEMP/caddy" caddy
+          echo "$RUNNER_TEMP/caddy" >> "$GITHUB_PATH"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: npm ci
       - run: npm run build
       - run: npm test
-      - run: npm publish
+      - name: Pack the release archive
+        id: archive
+        run: |
+          npm pack --pack-destination "$RUNNER_TEMP"
+          node --input-type=module -e 'import fs from "node:fs"; const p=JSON.parse(fs.readFileSync("package.json")); fs.appendFileSync(process.env.GITHUB_OUTPUT, "path=" + process.env.RUNNER_TEMP + "/" + p.name.slice(1).replace("/", "-") + "-" + p.version + ".tgz\n");'
+      - name: Publish the exact archive
+        run: npm publish "$PACKAGE_FILE"
         env:
+          PACKAGE_FILE: ${{ steps.archive.outputs.path }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Verify published package can be installed
+      - name: Attach the same public archive
+        run: gh release upload "$RELEASE_TAG" "$PACKAGE_FILE"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          PACKAGE_FILE: ${{ steps.archive.outputs.path }}
+      - name: Verify registry metadata
         run: npm view @128bitstudios/devhub version --registry=https://npm.pkg.github.com
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify anonymous archive installation
+        run: npm install --ignore-scripts --no-audit --no-fund --prefix "$RUNNER_TEMP/consumer" "https://github.com/$REPOSITORY/releases/download/$RELEASE_TAG/$(basename "$PACKAGE_FILE")"
+        env:
+          REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          PACKAGE_FILE: ${{ steps.archive.outputs.path }}

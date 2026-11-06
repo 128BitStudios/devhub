@@ -1,22 +1,37 @@
 {
   "name": "@128bitstudios/devhub",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Configuration-driven local development processes, ports, HTTPS routing and shared services",
   "type": "module",
   "license": "UNLICENSED",
-  "engines": { "node": ">=22" },
-  "bin": { "devhub": "bin/devhub.mjs" },
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "devhub": "bin/devhub.mjs"
+  },
   "exports": {
     ".": "./src/config.mjs",
     "./core": "./src/core.mjs",
     "./schema.json": "./schema.json"
   },
-  "files": ["bin/", "src/", "schema.json", "README.md", "CHANGELOG.md"],
+  "files": [
+    "bin/",
+    "src/",
+    "schema.json",
+    "README.md",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "test": "node --test test/*.test.mjs",
     "build": "node --check bin/devhub.mjs && node --check src/cli.mjs && node --check src/core.mjs && node --check src/config.mjs && node --check src/gateway.mjs",
     "prepack": "npm run build"
   },
-  "repository": { "type": "git", "url": "git+https://github.com/128BitStudios/devhub.git" },
-  "publishConfig": { "registry": "https://npm.pkg.github.com" }
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/128BitStudios/devhub.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
 }

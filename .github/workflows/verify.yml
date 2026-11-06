@@ -19,7 +19,14 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - name: Install routing test dependency
-        run: sudo apt-get update && sudo apt-get install -y caddy
+        run: |
+          mkdir -p "$RUNNER_TEMP/caddy"
+          gh release download v2.11.9 --repo caddyserver/caddy --pattern caddy_2.11.9_linux_amd64.tar.gz --pattern caddy_2.11.9_checksums.txt --dir "$RUNNER_TEMP/caddy"
+          python3 -c 'import hashlib, os, pathlib; p=pathlib.Path(os.environ["RUNNER_TEMP"])/"caddy"; name="caddy_2.11.9_linux_amd64.tar.gz"; expected=next(line.split()[0] for line in (p/"caddy_2.11.9_checksums.txt").read_text().splitlines() if line.split()[-1]==name); assert hashlib.sha512((p/name).read_bytes()).hexdigest()==expected'
+          tar -xzf "$RUNNER_TEMP/caddy/caddy_2.11.9_linux_amd64.tar.gz" -C "$RUNNER_TEMP/caddy" caddy
+          echo "$RUNNER_TEMP/caddy" >> "$GITHUB_PATH"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: npm ci
       - run: npm run build
       - run: npm test
