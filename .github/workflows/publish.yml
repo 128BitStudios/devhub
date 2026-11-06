@@ -1,0 +1,36 @@
+name: Publish package
+on:
+  release:
+    types: [published]
+permissions:
+  contents: read
+  packages: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.release.tag_name }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          registry-url: https://npm.pkg.github.com
+          scope: '@128bitstudios'
+      - name: Check tag matches package version
+        run: node --input-type=module -e 'import fs from "node:fs"; if ("v" + JSON.parse(fs.readFileSync("package.json")).version !== process.env.RELEASE_TAG) process.exit(1)'
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+      - name: Install routing test dependency
+        run: sudo apt-get update && sudo apt-get install -y caddy
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify published package can be installed
+        run: npm view @128bitstudios/devhub version --registry=https://npm.pkg.github.com
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

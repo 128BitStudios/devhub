@@ -1,0 +1,450 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/128BitStudios/devhub/schema.json",
+  "title": "Local Dev Hub manifest",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "const": 2
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "env": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string"
+              },
+              "url": {
+                "type": "object",
+                "properties": {
+                  "port": {
+                    "type": "string"
+                  },
+                  "worktreePath": {
+                    "enum": [
+                      "suffix",
+                      "instance"
+                    ]
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "port"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "source"
+            ]
+          }
+        ]
+      }
+    },
+    "setup": {
+      "type": "object",
+      "properties": {
+        "dependencies": {
+          "type": "object",
+          "properties": {
+            "check": {
+              "type": "string"
+            },
+            "command": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "check",
+            "command"
+          ]
+        },
+        "envFiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "example": {
+                "type": "string"
+              },
+              "generate": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "bytes": {
+                      "type": "integer",
+                      "minimum": 16,
+                      "maximum": 256
+                    },
+                    "encoding": {
+                      "enum": [
+                        "base64",
+                        "hex"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "bytes"
+                  ]
+                }
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "example"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "infrastructure": {
+      "type": "object",
+      "properties": {
+        "project": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string"
+        },
+        "ports": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "service": {
+                "type": "string"
+              },
+              "target": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 65535
+              },
+              "variable": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "service",
+              "target",
+              "variable"
+            ]
+          },
+          "minProperties": 1
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "project",
+        "file",
+        "ports"
+      ]
+    },
+    "processes": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "cwd": {
+            "type": "string"
+          },
+          "command": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "envFile": {
+            "type": "string"
+          },
+          "ready": {
+            "type": "string",
+            "pattern": "^/"
+          },
+          "env": {
+            "type": "object",
+            "additionalProperties": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "source": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "object",
+                      "properties": {
+                        "port": {
+                          "type": "string"
+                        },
+                        "worktreePath": {
+                          "enum": [
+                            "suffix",
+                            "instance"
+                          ]
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "port"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "source"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "command"
+        ]
+      }
+    },
+    "hooks": {
+      "type": "object",
+      "properties": {
+        "beforeStart": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1
+              },
+              "cwd": {
+                "type": "string"
+              },
+              "process": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "command"
+            ]
+          }
+        },
+        "beforeCheck": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1
+              },
+              "cwd": {
+                "type": "string"
+              },
+              "process": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "command"
+            ]
+          }
+        },
+        "reset": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1
+              },
+              "cwd": {
+                "type": "string"
+              },
+              "process": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "command"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "cwd": {
+            "type": "string"
+          },
+          "process": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "command"
+        ]
+      }
+    },
+    "gateway": {
+      "type": "object",
+      "properties": {
+        "primary": {
+          "type": "string"
+        },
+        "routes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "host": {
+                "type": "string"
+              },
+              "service": {
+                "type": "string"
+              },
+              "paths": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "process": {
+                      "type": "string"
+                    },
+                    "match": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^/"
+                      },
+                      "minItems": 1
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "process"
+                  ]
+                },
+                "minItems": 1
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "host"
+            ]
+          },
+          "minItems": 1
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "route": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "route"
+            ]
+          }
+        },
+        "ready": {
+          "type": "object",
+          "properties": {
+            "route": {
+              "type": "string"
+            },
+            "path": {
+              "type": "string",
+              "pattern": "^/"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "route",
+            "path"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "primary",
+        "routes"
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "id",
+    "processes"
+  ]
+}
