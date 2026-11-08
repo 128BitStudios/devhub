@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0 — 2026-11-08
+
+- Multiple products can share one explicitly named sibling repository’s Docker services and existing data.
+- Local service clients can discover the gateway port and trust its certificate authority without disabling TLS verification.
+
 ## 0.1.1 — 2026-11-06
 
 - Public release downloads allow pinned npm installation without registry credentials.

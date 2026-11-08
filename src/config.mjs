@@ -34,6 +34,7 @@ export function validateManifest(manifest) {
   if (manifest.infrastructure) {
     if (!slug.test(manifest.infrastructure.project)) bad('invalid Compose project');
     safePath('/checkout', manifest.infrastructure.file);
+    if (manifest.infrastructure.owner !== undefined && !/^\.\.\/[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(manifest.infrastructure.owner)) bad('infrastructure owner must name one sibling checkout');
     for (const item of Object.values(manifest.infrastructure.ports ?? {})) {
       if (!slug.test(item.service) || !Number.isInteger(item.target) || item.target < 1 || item.target > 65535 || !/^[A-Z_][A-Z0-9_]*$/.test(item.variable)) bad('invalid infrastructure port');
     }

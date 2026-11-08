@@ -68,3 +68,12 @@ test('routing supports arbitrary process names, paths and service UIs', async ()
     await run(process.env.DEVHUB_CADDY || 'caddy', ['validate', '--config', path, '--adapter', 'caddyfile'], { quiet: true });
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
+
+test('shared infrastructure requires an explicit single sibling, without relaxing process paths', () => {
+  const manifest = { version: 2, id: 'consumer', processes: { app: { command: ['node'] } }, infrastructure: { owner: '../shared-services', project: 'shared', file: 'docker-compose.yml', ports: { db: { service: 'db', target: 1234, variable: 'DB_PORT' } } } };
+  assert.equal(validateManifest(manifest).infrastructure.owner, '../shared-services');
+  for (const owner of ['/tmp/foreign', '../../foreign', '../parent/child', '..', 'https://example.com']) {
+    assert.throws(() => validateManifest({ ...manifest, infrastructure: { ...manifest.infrastructure, owner } }), /owner/);
+  }
+  assert.throws(() => validateManifest({ ...manifest, processes: { app: { command: ['node'], cwd: '../shared-services' } } }), /paths/);
+});

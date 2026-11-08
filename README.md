@@ -9,7 +9,7 @@ The package has no application names, directory layouts, process roles, framewor
 Install the public, version-pinned npm archive directly from GitHub Releases. No registry login or npm credential file is needed:
 
 ```sh
-npm install --save-dev https://github.com/128BitStudios/devhub/releases/download/v0.1.1/128bitstudios-devhub-0.1.1.tgz
+npm install --save-dev https://github.com/128BitStudios/devhub/releases/download/v0.2.0/128bitstudios-devhub-0.2.0.tgz
 ```
 
 The dependency lockfile records the archive URL and integrity checksum. Commit it with your manifest. Future releases publish the identical archive to GitHub Packages as well; that registry still requires authentication even for public packages. Use the public release URL for credential-free installation. Do not commit credentials or add a registry mapping just for this URL dependency.
@@ -73,3 +73,9 @@ Linked Git worktrees receive stable path-derived instance IDs and share their ma
 ## Release
 
 Run `npm ci`, `npm run build`, `npm test`, and inspect `npm pack --dry-run`. Verify CI on the exact main commit before tagging. Publish an immutable `vVERSION` GitHub Release to trigger the package publishing workflow. It uses the repository's scoped `GITHUB_TOKEN`, verifies the version, reruns checks, publishes the archive to GitHub Packages and attaches the identical public archive to the GitHub Release, then verifies registry metadata and anonymous installation. App consumers upgrade their pinned versions independently.
+
+## Shared infrastructure across sibling repositories
+
+An application may declare `infrastructure.owner: "../services-repo"` to use a sibling Git checkout's Compose file. The explicit owner must be a Git root, is resolved relative to the primary checkout (including from linked worktrees), and does not relax process/environment path boundaries. The Compose project remains the shared ownership and locking key. Services and named volumes are retained; application data is not consolidated.
+
+Environment templates may reference `${gateway.httpsPort}` and `${gateway.ca}`. Use `NODE_EXTRA_CA_CERTS: "${gateway.ca}"` for Node clients calling the local HTTPS gateway, retaining certificate validation. Processes also receive `DEVHUB_REGISTRY_FILE` for application-specific cross-service discovery and `DEVHUB_COMPOSE_ROOT` for owner-scoped hooks.

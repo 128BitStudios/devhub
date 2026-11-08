@@ -156,6 +156,10 @@
             ]
           },
           "minProperties": 1
+        },
+        "owner": {
+          "type": "string",
+          "pattern": "^\\.\\./[a-zA-Z0-9][a-zA-Z0-9._-]*$"
         }
       },
       "additionalProperties": false,

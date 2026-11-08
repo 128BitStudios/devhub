@@ -89,3 +89,18 @@ test('reset requires confirmation and runs only the repository hook', { timeout:
     assert.equal(await readFile(join(root, 'hook-result'), 'utf8'), 'sandbox');
   } finally { await rm(root, { recursive: true, force: true }); }
 });
+
+test('an explicit Compose owner must be a sibling Git root', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'devhub-owner-'));
+  const root = join(directory, 'consumer'), owner = join(directory, 'services');
+  try {
+    await mkdir(root); await mkdir(owner);
+    await run('git', ['init', '-q'], { cwd: root, quiet: true });
+    await run('git', ['init', '-q'], { cwd: owner, quiet: true });
+    const manifest = { version: 2, id: 'consumer', processes: { app: { command: ['node'] } }, infrastructure: { owner: '../services', project: 'shared', file: 'docker-compose.yml', ports: { db: { service: 'db', target: 1234, variable: 'DB_PORT' } } } };
+    await writeFile(join(root, 'devhub.json'), JSON.stringify(manifest));
+    assert.match(await run(process.execPath, [cli, 'validate'], { cwd: root, quiet: true }), /valid/i);
+    await rm(join(owner, '.git'), { recursive: true, force: true });
+    await assert.rejects(run(process.execPath, [cli, 'validate'], { cwd: root, quiet: true }));
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});

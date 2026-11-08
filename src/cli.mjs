@@ -31,8 +31,13 @@ export async function main(cwd, argv) {
   const caddy = process.env.DEVHUB_CADDY || 'caddy';
   const local = port => `http://127.0.0.1:${port}`;
   const infrastructure = manifest.infrastructure;
-  const composeArgs = infrastructure ? ['compose', '-p', infrastructure.project, '-f', safePath(infrastructureRoot, infrastructure.file)] : [];
-  const compose = (args, env = {}, quiet = false) => run('docker', [...composeArgs, ...args], { cwd: infrastructureRoot, env: { ...process.env, ...env }, quiet });
+  const composeRoot = infrastructure?.owner ? realpathSync(resolve(infrastructureRoot, infrastructure.owner)) : infrastructureRoot;
+  if (infrastructure?.owner) {
+    const ownerRoot = await run('git', ['rev-parse', '--show-toplevel'], { cwd: composeRoot, quiet: true });
+    if (realpathSync(ownerRoot) !== composeRoot) throw new Error('Infrastructure owner must be a Git checkout root.');
+  }
+  const composeArgs = infrastructure ? ['compose', '-p', infrastructure.project, '-f', safePath(composeRoot, infrastructure.file)] : [];
+  const compose = (args, env = {}, quiet = false) => run('docker', [...composeArgs, ...args], { cwd: composeRoot, env: { ...process.env, ...env }, quiet });
 
   async function supervisorAlive(entry) {
     if (!entry || !alive(entry.pid)) return false;
@@ -145,7 +150,7 @@ export async function main(cwd, argv) {
     });
   }
   function contextFor(ports, services, gateway) {
-    const context = { root, instance: { id, hash, isWorktree }, ports, services, host: '127.0.0.1', urls: {} };
+    const context = { root, instance: { id, hash, isWorktree }, ports, services, host: '127.0.0.1', urls: {}, gateway: { httpsPort: gateway.httpsPort, ca: join(stateRoot, 'caddy-storage/pki/authorities/local/root.crt') } };
     for (const route of manifest.gateway?.routes ?? []) context.urls[route.name] = origin(expand(route.host, context), gateway.httpsPort);
     context.url = context.urls[manifest.gateway?.primary] ?? '';
     return context;
@@ -157,14 +162,14 @@ export async function main(cwd, argv) {
       ...environmentValues(manifest.processes[name]?.env, source, context),
       DEVHUB_INSTANCE_ID: id, DEVHUB_INSTANCE_HASH: hash,
       DEVHUB_WORKTREE: String(isWorktree), DEVHUB_ROOT: root,
-      DEVHUB_INFRASTRUCTURE_ROOT: infrastructureRoot,
+      DEVHUB_INFRASTRUCTURE_ROOT: infrastructureRoot, DEVHUB_COMPOSE_ROOT: composeRoot, DEVHUB_REGISTRY_FILE: registryFile,
       DEVHUB_SERVICES_JSON: JSON.stringify(context.services), DEVHUB_URL: context.url,
     };
   }
   async function hooks(name, context) {
     for (const item of manifest.hooks?.[name] ?? []) {
       const source = item.process ? await environment(item.process) : {};
-      const env = item.process ? runtimeEnvironment(item.process, source, context) : { ...process.env, ...environmentValues(manifest.env, source, context), DEVHUB_INSTANCE_ID: id, DEVHUB_INSTANCE_HASH: hash, DEVHUB_WORKTREE: String(isWorktree), DEVHUB_INFRASTRUCTURE_ROOT: infrastructureRoot, DEVHUB_SERVICES_JSON: JSON.stringify(context.services), DEVHUB_URL: context.url };
+      const env = item.process ? runtimeEnvironment(item.process, source, context) : { ...process.env, ...environmentValues(manifest.env, source, context), DEVHUB_INSTANCE_ID: id, DEVHUB_INSTANCE_HASH: hash, DEVHUB_WORKTREE: String(isWorktree), DEVHUB_INFRASTRUCTURE_ROOT: infrastructureRoot, DEVHUB_COMPOSE_ROOT: composeRoot, DEVHUB_REGISTRY_FILE: registryFile, DEVHUB_SERVICES_JSON: JSON.stringify(context.services), DEVHUB_URL: context.url };
       const args = item.command.map(value => expand(value, context));
       await run(args[0], args.slice(1), { cwd: item.cwd ? safePath(root, item.cwd) : root, env });
     }
